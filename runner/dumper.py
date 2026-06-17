@@ -53,6 +53,7 @@ class DataDumper:
         base_dir (str): Base directory for saving dumped data.
         need_atom_confidence (bool): Whether to save detailed atom-level confidence data.
         sorted_by_ranking_score (bool): Whether to sort output files by ranking score.
+        dump_token_features (bool): Whether to save intermediate token-level features.
     """
 
     def __init__(
@@ -60,10 +61,12 @@ class DataDumper:
         base_dir: str,
         need_atom_confidence: bool = False,
         sorted_by_ranking_score: bool = True,
+        dump_token_features: bool = False,
     ) -> None:
         self.base_dir = base_dir
         self.need_atom_confidence = need_atom_confidence
         self.sorted_by_ranking_score = sorted_by_ranking_score
+        self.dump_token_features = dump_token_features
 
     def dump(
         self,
@@ -164,6 +167,13 @@ class DataDumper:
             seed=seed,
             sorted_indices=sorted_indices,
         )
+        # Dump intermediate token-level features (shared across samples)
+        if self.dump_token_features and "token_features" in pred_dict:
+            self._save_token_features(
+                token_features=pred_dict["token_features"],
+                prediction_save_dir=prediction_save_dir,
+                sample_name=pdb_id,
+            )
 
     def _save_structure(
         self,
@@ -273,3 +283,36 @@ class DataDumper:
                     f"{sample_name}_full_data_sample_{rank}.json",
                 )
                 save_json(data["full_data"][idx], output_fpath, indent=None)
+
+    def _save_token_features(
+        self,
+        token_features: dict,
+        prediction_save_dir: str,
+        sample_name: str,
+    ):
+        """
+        Save intermediate token-level features to a compressed NPZ file.
+
+        The features are shared across all diffusion samples, so a single file
+        is written per seed.
+
+        Args:
+            token_features (dict): Mapping of feature name to tensor, e.g.
+                ``s_inputs`` [N_token, c_s_inputs], ``s_trunk`` [N_token, c_s],
+                ``z_trunk`` [N_token, N_token, c_z], plus token metadata
+                (``asym_id``, ``entity_id``, ``residue_index``, ``token_index``).
+            prediction_save_dir (str): Directory where to save the file.
+            sample_name (str): Sample name.
+        """
+        arrays = {}
+        for key, value in token_features.items():
+            if isinstance(value, torch.Tensor):
+                if value.dtype == torch.bfloat16:
+                    value = value.to(torch.float32)
+                value = value.detach().cpu().numpy()
+            arrays[key] = value
+        output_fpath = os.path.join(
+            prediction_save_dir,
+            f"{sample_name}_token_features.npz",
+        )
+        np.savez_compressed(output_fpath, **arrays)

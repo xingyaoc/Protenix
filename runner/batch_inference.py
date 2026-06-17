@@ -301,6 +301,7 @@ def get_default_runner(
     use_rna_msa: bool = False,
     use_seeds_in_json: bool = False,
     need_atom_confidence: bool = False,
+    dump_token_features: bool = False,
     kalign_binary_path: Optional[str] = None,
     use_tfg_guidance: bool = False,
 ) -> InferenceRunner:
@@ -373,6 +374,7 @@ def get_default_runner(
     configs.use_rna_msa = use_rna_msa
     configs.use_seeds_in_json = use_seeds_in_json
     configs.need_atom_confidence = need_atom_confidence
+    configs.dump_token_features = dump_token_features
     if kalign_binary_path is not None:
         # The path provided by the user is expected to exist by default
         configs.data.template.kalign_binary_path = kalign_binary_path
@@ -448,6 +450,7 @@ def inference_jsons(
     use_rna_msa: bool = False,
     use_seeds_in_json: bool = False,
     need_atom_confidence: bool = False,
+    dump_token_features: bool = False,
     kalign_binary_path: Optional[str] = None,
     use_tfg_guidance: bool = False,
     hmmsearch_binary_path: Optional[str] = None,
@@ -531,6 +534,7 @@ def inference_jsons(
         use_rna_msa=use_rna_msa,
         use_seeds_in_json=use_seeds_in_json,
         need_atom_confidence=need_atom_confidence,
+        dump_token_features=dump_token_features,
         kalign_binary_path=kalign_binary_path,
         use_tfg_guidance=use_tfg_guidance,
     )
@@ -689,6 +693,12 @@ def protenix_cli() -> None:
     help="Whether to compute atom-level confidence scores.",
 )
 @click.option(
+    "--dump_token_features",
+    type=bool,
+    default=False,
+    help="Whether to save intermediate token-level features (s_inputs/s_trunk/z_trunk).",
+)
+@click.option(
     "--kalign_binary_path",
     type=str,
     default=None,
@@ -781,6 +791,7 @@ def predict(
     use_rna_msa: bool,
     use_seeds_in_json: bool,
     need_atom_confidence: bool,
+    dump_token_features: bool,
     kalign_binary_path: Optional[str] = None,
     use_tfg_guidance: bool = False,
     hmmsearch_binary_path: Optional[str] = None,
@@ -938,6 +949,7 @@ def predict(
         use_rna_msa=use_rna_msa,
         use_seeds_in_json=use_seeds_in_json,
         need_atom_confidence=need_atom_confidence,
+        dump_token_features=dump_token_features,
         kalign_binary_path=kalign_binary_path,
         use_tfg_guidance=use_tfg_guidance,
         hmmsearch_binary_path=hmmsearch_binary_path,

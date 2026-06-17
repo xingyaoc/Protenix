@@ -508,6 +508,19 @@ class Protenix(nn.Module):
             mc_dropout=mc_dropout,
         )
 
+        # Optionally surface intermediate token-level features for dumping.
+        # These are shared across all N_sample diffusion samples.
+        if getattr(self.configs, "dump_token_features", False):
+            pred_dict["token_features"] = {
+                "s_inputs": s_inputs,
+                "s_trunk": s,
+                "z_trunk": z,
+                "asym_id": input_feature_dict["asym_id"],
+                "entity_id": input_feature_dict["entity_id"],
+                "residue_index": input_feature_dict["residue_index"],
+                "token_index": input_feature_dict["token_index"],
+            }
+
         keys_to_delete = []
         for key in input_feature_dict.keys():
             if "template_" in key or key in [
